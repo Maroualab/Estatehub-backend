@@ -1,0 +1,309 @@
+classDiagram
+    direction LR
+
+    %% =========================
+    %% DOMAIN (JPA ENTITIES)
+    %% =========================
+
+    class User {
+      <<Entity>>
+      +Long id
+      +String email
+      +String password
+      +String firstName
+      +String lastName
+      +UserRole role
+      +boolean isActive
+      +LocalDateTime createdAt
+      +LocalDateTime updatedAt
+      +Collection~GrantedAuthority~ getAuthorities()
+      +String getUsername()
+      +boolean isEnabled()
+    }
+
+    class Building {
+      <<Entity>>
+      +Long id
+      +String name
+      +String address
+      +String city
+      +String zipCode
+      +User landlord
+      +List~Unit~ units
+    }
+
+    class Unit {
+      <<Entity>>
+      +Long id
+      +String doorNumber
+      +Integer floor
+      +UnitType unitType
+      +BigDecimal rentPrice
+      +Building building
+    }
+
+    class Lease {
+      <<Entity>>
+      +Long id
+      +LocalDate startDate
+      +LocalDate endDate
+      +BigDecimal baseRentAmount
+      +BigDecimal utilityAmount
+      +LeaseStatus status
+      +User tenant
+      +Unit unit
+      +BigDecimal getTotalMonthlyPayment()
+    }
+
+    class Invoice {
+      <<Entity>>
+      +Long id
+      +LocalDate issueDate
+      +LocalDate dueDate
+      +BigDecimal totalAmount
+      +InvoiceStatus status
+      +int reminderLevel
+      +Lease lease
+      +LocalDate createdAt
+    }
+
+    class Amenity {
+      <<Entity>>
+      +Long id
+      +String name
+      +BigDecimal monthlyPrice
+      +Building building
+    }
+
+    class RefreshToken {
+      <<Entity>>
+      +Long id
+      +String token
+      +Instant expiryDate
+      +User user
+    }
+
+    %% =========================
+    %% ENUMS
+    %% =========================
+
+    class UserRole {
+      <<enumeration>>
+      LANDLORD
+      TENANT
+      ADMIN
+    }
+
+    class UnitType {
+      <<enumeration>>
+      STUDIO
+      T1
+      T2
+      T3
+      T4
+      T5
+      T6_PLUS
+      COMMERCIAL
+    }
+
+    class LeaseStatus {
+      <<enumeration>>
+      DRAFT
+      ACTIVE
+      TERMINATED
+    }
+
+    class InvoiceStatus {
+      <<enumeration>>
+      SENT
+      PAID
+      OVERDUE
+      AT_RISK
+    }
+
+    class UnitStatus {
+      <<enumeration>>
+      VACANT
+      OCCUPIED
+    }
+
+    User --> UserRole : @Enumerated
+    Unit --> UnitType : @Enumerated
+    Lease --> LeaseStatus : @Enumerated
+    Invoice --> InvoiceStatus : @Enumerated
+
+    User "1" <-- "0..*" Building : @ManyToOne landlord
+    Building "1" --> "0..*" Unit : @OneToMany mappedBy building
+    Building "1" --> "0..*" Amenity : @OneToMany implied
+    User "1" <-- "0..*" Lease : @ManyToOne tenant
+    Unit "1" <-- "0..*" Lease : @ManyToOne unit
+    Lease "1" <-- "0..*" Invoice : @ManyToOne lease
+    User "1" <-- "0..1" RefreshToken : @OneToOne user
+
+    %% =========================
+    %% REPOSITORIES
+    %% =========================
+
+    class UserRepository { <<interface>> }
+    class BuildingRepository { <<interface>> }
+    class UnitRepository { <<interface>> }
+    class LeaseRepository { <<interface>> }
+    class InvoiceRepository { <<interface>> }
+    class AmenityRepository { <<interface>> }
+    class RefreshTokenRepository { <<interface>> }
+
+    UserRepository ..> User : JpaRepository~User,Long~
+    BuildingRepository ..> Building : JpaRepository~Building,Long~
+    UnitRepository ..> Unit : JpaRepository~Unit,Long~
+    LeaseRepository ..> Lease : JpaRepository~Lease,Long~
+    InvoiceRepository ..> Invoice : JpaRepository~Invoice,Long~
+    AmenityRepository ..> Amenity : JpaRepository~Amenity,Long~
+    RefreshTokenRepository ..> RefreshToken : JpaRepository~RefreshToken,Long~
+
+    %% =========================
+    %% SERVICES
+    %% =========================
+
+    class AuthService { <<Service>> }
+    class BuildingService { <<Service>> }
+    class UnitService { <<Service>> }
+    class LeaseService { <<Service>> }
+    class InvoiceService { <<Service>> }
+    class AmenityService { <<Service>> }
+    class DashboardService { <<Service>> }
+    class StatsService { <<Service>> }
+    class RefreshTokenService { <<Service>> }
+    class InvoiceScheduler { <<Component>> }
+
+    AuthService --> UserRepository
+    AuthService --> RefreshTokenRepository
+    AuthService --> RefreshTokenService
+    AuthService --> JwtService
+
+    BuildingService --> BuildingRepository
+    BuildingService --> UserRepository
+
+    UnitService --> UnitRepository
+    UnitService --> BuildingRepository
+    UnitService --> LeaseRepository
+
+    LeaseService --> LeaseRepository
+    LeaseService --> UnitRepository
+    LeaseService --> UserRepository
+
+    InvoiceService --> InvoiceRepository
+    InvoiceService --> LeaseRepository
+
+    AmenityService --> AmenityRepository
+    AmenityService --> BuildingRepository
+
+    DashboardService --> BuildingRepository
+    DashboardService --> UnitRepository
+    DashboardService --> LeaseRepository
+
+    StatsService --> UnitRepository
+    StatsService --> LeaseRepository
+    StatsService --> InvoiceRepository
+
+    RefreshTokenService --> RefreshTokenRepository
+    RefreshTokenService --> UserRepository
+
+    InvoiceScheduler --> InvoiceService
+
+    %% =========================
+    %% CONTROLLERS
+    %% =========================
+
+    class AuthController { <<RestController>> }
+    class BuildingController { <<RestController>> }
+    class UnitController { <<RestController>> }
+    class LeaseController { <<RestController>> }
+    class InvoiceController { <<RestController>> }
+    class AmenityController { <<RestController>> }
+    class DashboardController { <<RestController>> }
+    class StatsController { <<RestController>> }
+    class AdminController { <<RestController>> }
+    class TestController { <<RestController>> }
+
+    AuthController --> AuthService
+    BuildingController --> BuildingService
+    UnitController --> UnitService
+    LeaseController --> LeaseService
+    InvoiceController --> InvoiceService
+    AmenityController --> AmenityService
+    DashboardController --> DashboardService
+    StatsController --> StatsService
+    AdminController --> UserRepository
+
+    %% =========================
+    %% SECURITY & CONFIG
+    %% =========================
+
+    class JwtService {
+      <<Service>>
+      +String generateToken(UserDetails)
+      +String extractUsername(String)
+      +boolean isTokenValid(String, UserDetails)
+    }
+
+    class JwtAuthenticationFilter {
+      <<Component>>
+      +shouldNotFilter(HttpServletRequest) boolean
+      +doFilterInternal(HttpServletRequest, HttpServletResponse, FilterChain)
+    }
+
+    class SecurityConfig {
+      <<Configuration>>
+      +SecurityFilterChain securityFilterChain(HttpSecurity)
+      +CorsConfigurationSource corsConfigurationSource()
+    }
+
+    class ApplicationConfig {
+      <<Configuration>>
+      +UserDetailsService userDetailsService()
+      +AuthenticationProvider authenticationProvider()
+      +AuthenticationManager authenticationManager(AuthenticationConfiguration)
+      +PasswordEncoder passwordEncoder()
+    }
+
+    class UserDetails { <<interface>> }
+    class OncePerRequestFilter
+    class AuthenticationProvider { <<interface>> }
+    class UserDetailsService { <<interface>> }
+    class PasswordEncoder { <<interface>> }
+
+    User ..|> UserDetails
+    JwtAuthenticationFilter --|> OncePerRequestFilter
+    JwtAuthenticationFilter --> JwtService
+    JwtAuthenticationFilter --> UserDetailsService
+    SecurityConfig --> JwtAuthenticationFilter
+    SecurityConfig --> AuthenticationProvider
+    ApplicationConfig --> UserRepository
+    ApplicationConfig ..> UserDetailsService
+    ApplicationConfig ..> PasswordEncoder
+
+    %% =========================
+    %% EXCEPTIONS
+    %% =========================
+
+    class GlobalExceptionHandler {
+      <<RestControllerAdvice>>
+      +handleResourceNotFound(...)
+      +handleBusinessValidation(...)
+      +handleTokenRefreshException(...)
+      +handleValidationErrors(...)
+      +handleBadCredentials(...)
+      +handleAuthenticationException(...)
+      +handleAccessDenied(...)
+      +handleGlobalException(...)
+    }
+
+    class ResourceNotFoundException { <<RuntimeException>> }
+    class BusinessValidationException { <<RuntimeException>> }
+    class TokenRefreshException { <<RuntimeException>> }
+    class ErrorResponse
+
+    GlobalExceptionHandler ..> ResourceNotFoundException
+    GlobalExceptionHandler ..> BusinessValidationException
+    GlobalExceptionHandler ..> TokenRefreshException
+    GlobalExceptionHandler ..> ErrorResponse
