@@ -1,0 +1,245 @@
+﻿{
+"info": {
+"_postman_id": "estatehub-api-collection",
+"name": "EstateHub API",
+"description": "Complete Postman collection for EstateHub Backend.\n\nWorkflow:\n1. Login (or Register) → access token + refresh token are auto-saved\n2. All protected routes use {{accessToken}} automatically\n3. Use Refresh Token when access token expires → both accessToken AND refreshToken are replaced (rotation)\n4. Logout to invalidate refresh token server-side\n\nSeed users:\n- landlord@test.com / password123\n- tenant@test.com / password123",
+"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+},
+"variable": [
+{ "key": "baseUrl",      "value": "http://localhost:8080" },
+{ "key": "accessToken",  "value": "" },
+{ "key": "refreshToken", "value": "" },
+{ "key": "buildingId",   "value": "" },
+{ "key": "unitId",       "value": "" },
+{ "key": "leaseId",      "value": "" }
+],
+"item": [
+{
+"name": "🔐 Auth",
+"item": [
+{
+"name": "1. Login (Landlord)",
+"event": [{"listen": "test","script": {"exec": ["if (pm.response.code === 200) {","    var json = pm.response.json();","    pm.collectionVariables.set('accessToken', json.token);","    pm.collectionVariables.set('refreshToken', json.refreshToken);","    console.log('✅ accessToken + refreshToken saved');","}"],"type": "text/javascript"}}],
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"}],"body": {"mode": "raw","raw": "{\n    \"email\": \"landlord@test.com\",\n    \"password\": \"password123\"\n}"},"url": {"raw": "{{baseUrl}}/api/auth/login","host": ["{{baseUrl}}"],"path": ["api","auth","login"]},"description": "Login with the seeded landlord account. Access token + refresh token are auto-saved."}
+},
+{
+"name": "2. Login (Tenant)",
+"event": [{"listen": "test","script": {"exec": ["if (pm.response.code === 200) {","    var json = pm.response.json();","    pm.collectionVariables.set('accessToken', json.token);","    pm.collectionVariables.set('refreshToken', json.refreshToken);","}"],"type": "text/javascript"}}],
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"}],"body": {"mode": "raw","raw": "{\n    \"email\": \"tenant@test.com\",\n    \"password\": \"password123\"\n}"},"url": {"raw": "{{baseUrl}}/api/auth/login","host": ["{{baseUrl}}"],"path": ["api","auth","login"]},"description": "Login with the seeded tenant account."}
+},
+{
+"name": "3. Register (New Landlord)",
+"event": [{"listen": "test","script": {"exec": ["if (pm.response.code === 200) {","    var json = pm.response.json();","    pm.collectionVariables.set('accessToken', json.token);","    pm.collectionVariables.set('refreshToken', json.refreshToken);","}"],"type": "text/javascript"}}],
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"}],"body": {"mode": "raw","raw": "{\n    \"firstName\": \"Jean\",\n    \"lastName\": \"Dupont\",\n    \"email\": \"jean.dupont@test.com\",\n    \"password\": \"password123\",\n    \"role\": \"LANDLORD\"\n}"},"url": {"raw": "{{baseUrl}}/api/auth/register","host": ["{{baseUrl}}"],"path": ["api","auth","register"]},"description": "Register a new landlord. Password must be >= 8 chars."}
+},
+{
+"name": "4. Register (New Tenant)",
+"event": [{"listen": "test","script": {"exec": ["if (pm.response.code === 200) {","    var json = pm.response.json();","    pm.collectionVariables.set('accessToken', json.token);","    pm.collectionVariables.set('refreshToken', json.refreshToken);","}"],"type": "text/javascript"}}],
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"}],"body": {"mode": "raw","raw": "{\n    \"firstName\": \"Marie\",\n    \"lastName\": \"Martin\",\n    \"email\": \"marie.martin@test.com\",\n    \"password\": \"password123\",\n    \"role\": \"TENANT\"\n}"},"url": {"raw": "{{baseUrl}}/api/auth/register","host": ["{{baseUrl}}"],"path": ["api","auth","register"]},"description": "Register a new tenant."}
+},
+{
+"name": "5. Register (Duplicate Email — Should Fail)",
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"}],"body": {"mode": "raw","raw": "{\n    \"firstName\": \"Duplicate\",\n    \"lastName\": \"User\",\n    \"email\": \"landlord@test.com\",\n    \"password\": \"password123\",\n    \"role\": \"LANDLORD\"\n}"},"url": {"raw": "{{baseUrl}}/api/auth/register","host": ["{{baseUrl}}"],"path": ["api","auth","register"]},"description": "Should fail 400 — Cet email est deja utilise."}
+},
+{
+"name": "6. Register (Password Too Short — Should Fail)",
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"}],"body": {"mode": "raw","raw": "{\n    \"firstName\": \"Test\",\n    \"lastName\": \"User\",\n    \"email\": \"shortpwd@test.com\",\n    \"password\": \"abc123\",\n    \"role\": \"TENANT\"\n}"},"url": {"raw": "{{baseUrl}}/api/auth/register","host": ["{{baseUrl}}"],"path": ["api","auth","register"]},"description": "Should fail 400 — password is 6 chars, minimum is 8."}
+},
+{
+"name": "7. Login (Wrong Password — Should Fail)",
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"}],"body": {"mode": "raw","raw": "{\n    \"email\": \"landlord@test.com\",\n    \"password\": \"wrongpassword\"\n}"},"url": {"raw": "{{baseUrl}}/api/auth/login","host": ["{{baseUrl}}"],"path": ["api","auth","login"]},"description": "Should fail 401 — bad credentials."}
+},
+{
+"name": "8. Refresh Token",
+"event": [{"listen": "test","script": {"exec": ["if (pm.response.code === 200) {","    var json = pm.response.json();","    pm.collectionVariables.set('accessToken', json.accessToken);","    pm.collectionVariables.set('refreshToken', json.refreshToken);","    console.log('✅ Token rotation: new accessToken + refreshToken saved');","}"],"type": "text/javascript"}}],
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"}],"body": {"mode": "raw","raw": "{\n    \"refreshToken\": \"{{refreshToken}}\"\n}"},"url": {"raw": "{{baseUrl}}/api/auth/refresh","host": ["{{baseUrl}}"],"path": ["api","auth","refresh"]},"description": "Token rotation active: the old refresh token is invalidated and a brand new one is issued. Both accessToken and refreshToken collection variables are updated."}
+},
+{
+"name": "9. Refresh Token (Invalid — Should Fail)",
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"}],"body": {"mode": "raw","raw": "{\n    \"refreshToken\": \"fake-invalid-refresh-token\"\n}"},"url": {"raw": "{{baseUrl}}/api/auth/refresh","host": ["{{baseUrl}}"],"path": ["api","auth","refresh"]},"description": "Should fail 403 — refresh token not found in DB."}
+},
+{
+"name": "10. Logout",
+"request": {"method": "POST","header": [{"key": "Authorization","value": "Bearer {{accessToken}}"}],"url": {"raw": "{{baseUrl}}/api/auth/logout","host": ["{{baseUrl}}"],"path": ["api","auth","logout"]},"description": "Server-side logout — deletes the refresh token from refresh_tokens table. Requires valid JWT."}
+},
+{
+"name": "11. Logout (No Token — Should Fail)",
+"request": {"method": "POST","header": [],"url": {"raw": "{{baseUrl}}/api/auth/logout","host": ["{{baseUrl}}"],"path": ["api","auth","logout"]},"description": "Should fail 403 — no JWT provided."}
+}
+]
+},
+{
+"name": "🏢 Buildings",
+"item": [
+{
+"name": "1. Create Building",
+"event": [{"listen": "test","script": {"exec": ["if (pm.response.code === 200) {","    var json = pm.response.json();","    pm.collectionVariables.set('buildingId', json.id);","    console.log('✅ buildingId saved: ' + json.id);","}"],"type": "text/javascript"}}],
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"},{"key": "Authorization","value": "Bearer {{accessToken}}"}],"body": {"mode": "raw","raw": "{\n    \"name\": \"Residence Les Lilas\",\n    \"address\": \"45 Rue de la Paix\",\n    \"city\": \"Lyon\",\n    \"zipCode\": \"69001\"\n}"},"url": {"raw": "{{baseUrl}}/api/buildings","host": ["{{baseUrl}}"],"path": ["api","buildings"]},"description": "Create a building. Landlord is resolved from the JWT — never send landlordId in the body. Building ID is auto-saved."}
+},
+{
+"name": "2. Create Building (Another)",
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"},{"key": "Authorization","value": "Bearer {{accessToken}}"}],"body": {"mode": "raw","raw": "{\n    \"name\": \"Tour Montparnasse Residence\",\n    \"address\": \"12 Avenue du Maine\",\n    \"city\": \"Paris\",\n    \"zipCode\": \"75015\"\n}"},"url": {"raw": "{{baseUrl}}/api/buildings","host": ["{{baseUrl}}"],"path": ["api","buildings"]}}
+},
+{
+"name": "3. Create Building (Validation Error — Should Fail)",
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"},{"key": "Authorization","value": "Bearer {{accessToken}}"}],"body": {"mode": "raw","raw": "{\n    \"name\": \"A\",\n    \"address\": \"\",\n    \"city\": \"Lyon\"\n}"},"url": {"raw": "{{baseUrl}}/api/buildings","host": ["{{baseUrl}}"],"path": ["api","buildings"]},"description": "Should fail 400 — name too short (< 2 chars), address is blank."}
+},
+{
+"name": "4. Get My Buildings",
+"request": {"method": "GET","header": [{"key": "Authorization","value": "Bearer {{accessToken}}"}],"url": {"raw": "{{baseUrl}}/api/buildings","host": ["{{baseUrl}}"],"path": ["api","buildings"]},"description": "List all buildings owned by the authenticated landlord."}
+},
+{
+"name": "5. Get Building by ID",
+"request": {"method": "GET","header": [{"key": "Authorization","value": "Bearer {{accessToken}}"}],"url": {"raw": "{{baseUrl}}/api/buildings/{{buildingId}}","host": ["{{baseUrl}}"],"path": ["api","buildings","{{buildingId}}"]},"description": "Fetch one building. Returns 400 if it belongs to another landlord."}
+},
+{
+"name": "6. Get Building (Non-existent — Should Fail)",
+"request": {"method": "GET","header": [{"key": "Authorization","value": "Bearer {{accessToken}}"}],"url": {"raw": "{{baseUrl}}/api/buildings/99999","host": ["{{baseUrl}}"],"path": ["api","buildings","99999"]},"description": "Should fail 404."}
+},
+{
+"name": "7. Update Building",
+"request": {"method": "PUT","header": [{"key": "Content-Type","value": "application/json"},{"key": "Authorization","value": "Bearer {{accessToken}}"}],"body": {"mode": "raw","raw": "{\n    \"name\": \"Residence Les Lilas (Renovee)\",\n    \"address\": \"45 Rue de la Paix\",\n    \"city\": \"Lyon\",\n    \"zipCode\": \"69002\"\n}"},"url": {"raw": "{{baseUrl}}/api/buildings/{{buildingId}}","host": ["{{baseUrl}}"],"path": ["api","buildings","{{buildingId}}"]},"description": "Update building. Ownership verified — can only edit your own buildings."}
+},
+{
+"name": "8. Delete Building",
+"request": {"method": "DELETE","header": [{"key": "Authorization","value": "Bearer {{accessToken}}"}],"url": {"raw": "{{baseUrl}}/api/buildings/{{buildingId}}","host": ["{{baseUrl}}"],"path": ["api","buildings","{{buildingId}}"]},"description": "Delete a building. Ownership verified."}
+},
+{
+"name": "9. Get Buildings (No Token — Should Fail)",
+"request": {"method": "GET","header": [],"url": {"raw": "{{baseUrl}}/api/buildings","host": ["{{baseUrl}}"],"path": ["api","buildings"]},"description": "Should fail 403 — no JWT."}
+}
+]
+},
+{
+"name": "🏠 Units",
+"item": [
+{
+"name": "1. Create Unit",
+"event": [{"listen": "test","script": {"exec": ["if (pm.response.code === 200) {","    var json = pm.response.json();","    pm.collectionVariables.set('unitId', json.id);","    console.log('✅ unitId saved: ' + json.id);","}"],"type": "text/javascript"}}],
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"},{"key": "Authorization","value": "Bearer {{accessToken}}"}],"body": {"mode": "raw","raw": "{\n    \"doorNumber\": \"A101\",\n    \"floor\": 1,\n    \"unitType\": \"T2\",\n    \"rentPrice\": 850.00,\n    \"buildingId\": {{buildingId}}\n}"},"url": {"raw": "{{baseUrl}}/api/units","host": ["{{baseUrl}}"],"path": ["api","units"]},"description": "Create a unit. unitType: STUDIO | T1 | T2 | T3 | T4 | T5 | T6_PLUS | COMMERCIAL. rentPrice > 0. Unit ID is auto-saved."}
+},
+{
+"name": "2. Create Unit (Another)",
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"},{"key": "Authorization","value": "Bearer {{accessToken}}"}],"body": {"mode": "raw","raw": "{\n    \"doorNumber\": \"B202\",\n    \"floor\": 2,\n    \"unitType\": \"T3\",\n    \"rentPrice\": 1100.00,\n    \"buildingId\": {{buildingId}}\n}"},"url": {"raw": "{{baseUrl}}/api/units","host": ["{{baseUrl}}"],"path": ["api","units"]}}
+},
+{
+"name": "3. Create Unit (Missing Required Fields — Should Fail)",
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"},{"key": "Authorization","value": "Bearer {{accessToken}}"}],"body": {"mode": "raw","raw": "{\n    \"doorNumber\": \"C303\",\n    \"floor\": 3,\n    \"buildingId\": {{buildingId}}\n}"},"url": {"raw": "{{baseUrl}}/api/units","host": ["{{baseUrl}}"],"path": ["api","units"]},"description": "Should fail 400 — unitType and rentPrice are required (@NotNull)."}
+},
+{
+"name": "4. Create Unit (Non-existent Building — Should Fail)",
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"},{"key": "Authorization","value": "Bearer {{accessToken}}"}],"body": {"mode": "raw","raw": "{\n    \"doorNumber\": \"D404\",\n    \"floor\": 4,\n    \"unitType\": \"STUDIO\",\n    \"rentPrice\": 600.00,\n    \"buildingId\": 99999\n}"},"url": {"raw": "{{baseUrl}}/api/units","host": ["{{baseUrl}}"],"path": ["api","units"]},"description": "Should fail 404 — building 99999 doesn't exist."}
+},
+{
+"name": "5. Get Units by Building",
+"request": {"method": "GET","header": [{"key": "Authorization","value": "Bearer {{accessToken}}"}],"url": {"raw": "{{baseUrl}}/api/units/building/{{buildingId}}","host": ["{{baseUrl}}"],"path": ["api","units","building","{{buildingId}}"]},"description": "List all units for a building."}
+},
+{
+"name": "6. Get Unit by ID",
+"request": {"method": "GET","header": [{"key": "Authorization","value": "Bearer {{accessToken}}"}],"url": {"raw": "{{baseUrl}}/api/units/{{unitId}}","host": ["{{baseUrl}}"],"path": ["api","units","{{unitId}}"]},"description": "Fetch a single unit by ID."}
+},
+{
+"name": "7. Update Unit",
+"request": {"method": "PUT","header": [{"key": "Content-Type","value": "application/json"},{"key": "Authorization","value": "Bearer {{accessToken}}"}],"body": {"mode": "raw","raw": "{\n    \"doorNumber\": \"A101-BIS\",\n    \"floor\": 1,\n    \"unitType\": \"T2\",\n    \"rentPrice\": 920.00\n}"},"url": {"raw": "{{baseUrl}}/api/units/{{unitId}}","host": ["{{baseUrl}}"],"path": ["api","units","{{unitId}}"]},"description": "Update unit details. buildingId is not included (immutable after creation)."}
+},
+{
+"name": "8. Delete Unit",
+"request": {"method": "DELETE","header": [{"key": "Authorization","value": "Bearer {{accessToken}}"}],"url": {"raw": "{{baseUrl}}/api/units/{{unitId}}","host": ["{{baseUrl}}"],"path": ["api","units","{{unitId}}"]},"description": "Delete a unit by ID."}
+},
+{
+"name": "9. Get Units (Non-existent Building — Should Fail)",
+"request": {"method": "GET","header": [{"key": "Authorization","value": "Bearer {{accessToken}}"}],"url": {"raw": "{{baseUrl}}/api/units/building/99999","host": ["{{baseUrl}}"],"path": ["api","units","building","99999"]},"description": "Should fail 404 — building 99999 doesn't exist."}
+}
+]
+},
+{
+"name": "📝 Leases",
+"item": [
+{
+"name": "1. Create Lease",
+"event": [{"listen": "test","script": {"exec": ["if (pm.response.code === 200) {","    var json = pm.response.json();","    pm.collectionVariables.set('leaseId', json.id);","    console.log('✅ leaseId saved: ' + json.id);","    console.log('totalMonthlyPayment: ' + json.totalMonthlyPayment);","}"],"type": "text/javascript"}}],
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"},{"key": "Authorization","value": "Bearer {{accessToken}}"}],"body": {"mode": "raw","raw": "{\n    \"startDate\": \"2026-03-01\",\n    \"endDate\": \"2027-03-01\",\n    \"baseRentAmount\": 850.00,\n    \"utilityAmount\": 150.00,\n    \"unitId\": {{unitId}},\n    \"tenantEmail\": \"tenant@test.com\"\n}"},"url": {"raw": "{{baseUrl}}/api/leases","host": ["{{baseUrl}}"],"path": ["api","leases"]},"description": "Create a lease. Response includes totalMonthlyPayment = baseRentAmount + utilityAmount (computed automatically). Lease ID is auto-saved."}
+},
+{
+"name": "2. Create Lease (Unit Already Active — Should Fail)",
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"},{"key": "Authorization","value": "Bearer {{accessToken}}"}],"body": {"mode": "raw","raw": "{\n    \"startDate\": \"2026-06-01\",\n    \"endDate\": \"2027-06-01\",\n    \"baseRentAmount\": 900.00,\n    \"utilityAmount\": 100.00,\n    \"unitId\": {{unitId}},\n    \"tenantEmail\": \"tenant@test.com\"\n}"},"url": {"raw": "{{baseUrl}}/api/leases","host": ["{{baseUrl}}"],"path": ["api","leases"]},"description": "Should fail 400 — the unit already has an ACTIVE lease. Run #1 first."}
+},
+{
+"name": "3. Create Lease (Unknown Tenant — Should Fail)",
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"},{"key": "Authorization","value": "Bearer {{accessToken}}"}],"body": {"mode": "raw","raw": "{\n    \"startDate\": \"2026-04-01\",\n    \"endDate\": \"2027-04-01\",\n    \"baseRentAmount\": 700.00,\n    \"utilityAmount\": 100.00,\n    \"unitId\": {{unitId}},\n    \"tenantEmail\": \"doesnotexist@test.com\"\n}"},"url": {"raw": "{{baseUrl}}/api/leases","host": ["{{baseUrl}}"],"path": ["api","leases"]},"description": "Should fail 404 — tenant email doesn't exist in DB."}
+},
+{
+"name": "4. Create Lease (Non-existent Unit — Should Fail)",
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"},{"key": "Authorization","value": "Bearer {{accessToken}}"}],"body": {"mode": "raw","raw": "{\n    \"startDate\": \"2026-04-01\",\n    \"endDate\": \"2027-04-01\",\n    \"baseRentAmount\": 700.00,\n    \"utilityAmount\": 100.00,\n    \"unitId\": 99999,\n    \"tenantEmail\": \"tenant@test.com\"\n}"},"url": {"raw": "{{baseUrl}}/api/leases","host": ["{{baseUrl}}"],"path": ["api","leases"]},"description": "Should fail 404 — unit 99999 doesn't exist."}
+},
+{
+"name": "5. Create Lease (Validation Errors — Should Fail)",
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"},{"key": "Authorization","value": "Bearer {{accessToken}}"}],"body": {"mode": "raw","raw": "{\n    \"baseRentAmount\": -50.00,\n    \"utilityAmount\": 100.00,\n    \"unitId\": {{unitId}},\n    \"tenantEmail\": \"not-an-email\"\n}"},"url": {"raw": "{{baseUrl}}/api/leases","host": ["{{baseUrl}}"],"path": ["api","leases"]},"description": "Should fail 400 — startDate missing, baseRentAmount negative, invalid tenantEmail format."}
+},
+{
+"name": "6. Get My Leases",
+"request": {"method": "GET","header": [{"key": "Authorization","value": "Bearer {{accessToken}}"}],"url": {"raw": "{{baseUrl}}/api/leases","host": ["{{baseUrl}}"],"path": ["api","leases"]},"description": "List all leases for the authenticated landlord. Each entry includes totalMonthlyPayment."}
+},
+{
+"name": "7. Get Leases (No Token — Should Fail)",
+"request": {"method": "GET","header": [],"url": {"raw": "{{baseUrl}}/api/leases","host": ["{{baseUrl}}"],"path": ["api","leases"]},"description": "Should fail 403 — no JWT."}
+}
+]
+},
+{
+"name": "🧪 Test",
+"item": [
+{
+"name": "1. Hello (Protected)",
+"request": {"method": "GET","header": [{"key": "Authorization","value": "Bearer {{accessToken}}"}],"url": {"raw": "{{baseUrl}}/api/test/hello","host": ["{{baseUrl}}"],"path": ["api","test","hello"]},"description": "Protected route — should return 'jwt token valid, hello'."}
+},
+{
+"name": "2. Hello (No Token — Should Fail)",
+"request": {"method": "GET","header": [],"url": {"raw": "{{baseUrl}}/api/test/hello","host": ["{{baseUrl}}"],"path": ["api","test","hello"]},"description": "Should fail 403 — no JWT."}
+},
+{
+"name": "3. Hello (Invalid Token — Should Fail)",
+"request": {"method": "GET","header": [{"key": "Authorization","value": "Bearer eyJhbGciOiJIUzI1NiJ9.INVALID.TOKEN"}],"url": {"raw": "{{baseUrl}}/api/test/hello","host": ["{{baseUrl}}"],"path": ["api","test","hello"]},"description": "Should fail — malformed JWT."}
+}
+]
+},
+{
+"name": "🔄 Full Workflow",
+"item": [
+{
+"name": "Step 1 — Login as Landlord",
+"event": [{"listen": "test","script": {"exec": ["var json = pm.response.json();","pm.collectionVariables.set('accessToken', json.token);","pm.collectionVariables.set('refreshToken', json.refreshToken);"],"type": "text/javascript"}}],
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"}],"body": {"mode": "raw","raw": "{\n    \"email\": \"landlord@test.com\",\n    \"password\": \"password123\"\n}"},"url": {"raw": "{{baseUrl}}/api/auth/login","host": ["{{baseUrl}}"],"path": ["api","auth","login"]}}
+},
+{
+"name": "Step 2 — Create Building",
+"event": [{"listen": "test","script": {"exec": ["var json = pm.response.json();","pm.collectionVariables.set('buildingId', json.id);"],"type": "text/javascript"}}],
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"},{"key": "Authorization","value": "Bearer {{accessToken}}"}],"body": {"mode": "raw","raw": "{\n    \"name\": \"Workflow Building\",\n    \"address\": \"1 Rue du Test\",\n    \"city\": \"Marseille\",\n    \"zipCode\": \"13001\"\n}"},"url": {"raw": "{{baseUrl}}/api/buildings","host": ["{{baseUrl}}"],"path": ["api","buildings"]}}
+},
+{
+"name": "Step 3 — Create Unit",
+"event": [{"listen": "test","script": {"exec": ["var json = pm.response.json();","pm.collectionVariables.set('unitId', json.id);"],"type": "text/javascript"}}],
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"},{"key": "Authorization","value": "Bearer {{accessToken}}"}],"body": {"mode": "raw","raw": "{\n    \"doorNumber\": \"WF-01\",\n    \"floor\": 1,\n    \"unitType\": \"T2\",\n    \"rentPrice\": 950.00,\n    \"buildingId\": {{buildingId}}\n}"},"url": {"raw": "{{baseUrl}}/api/units","host": ["{{baseUrl}}"],"path": ["api","units"]}}
+},
+{
+"name": "Step 4 — Create Lease",
+"event": [{"listen": "test","script": {"exec": ["var json = pm.response.json();","pm.collectionVariables.set('leaseId', json.id);","console.log('totalMonthlyPayment: ' + json.totalMonthlyPayment);"],"type": "text/javascript"}}],
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"},{"key": "Authorization","value": "Bearer {{accessToken}}"}],"body": {"mode": "raw","raw": "{\n    \"startDate\": \"2026-03-01\",\n    \"endDate\": \"2027-03-01\",\n    \"baseRentAmount\": 900.00,\n    \"utilityAmount\": 120.00,\n    \"unitId\": {{unitId}},\n    \"tenantEmail\": \"tenant@test.com\"\n}"},"url": {"raw": "{{baseUrl}}/api/leases","host": ["{{baseUrl}}"],"path": ["api","leases"]}}
+},
+{
+"name": "Step 5 — View All Leases",
+"request": {"method": "GET","header": [{"key": "Authorization","value": "Bearer {{accessToken}}"}],"url": {"raw": "{{baseUrl}}/api/leases","host": ["{{baseUrl}}"],"path": ["api","leases"]}}
+},
+{
+"name": "Step 6 — Refresh Token (Rotation)",
+"event": [{"listen": "test","script": {"exec": ["var json = pm.response.json();","pm.collectionVariables.set('accessToken', json.accessToken);","pm.collectionVariables.set('refreshToken', json.refreshToken);","console.log('✅ Both tokens rotated and saved');"],"type": "text/javascript"}}],
+"request": {"method": "POST","header": [{"key": "Content-Type","value": "application/json"}],"body": {"mode": "raw","raw": "{\n    \"refreshToken\": \"{{refreshToken}}\"\n}"},"url": {"raw": "{{baseUrl}}/api/auth/refresh","host": ["{{baseUrl}}"],"path": ["api","auth","refresh"]}}
+},
+{
+"name": "Step 7 — Logout",
+"request": {"method": "POST","header": [{"key": "Authorization","value": "Bearer {{accessToken}}"}],"url": {"raw": "{{baseUrl}}/api/auth/logout","host": ["{{baseUrl}}"],"path": ["api","auth","logout"]}}
+}
+]
+}
+]
+}
