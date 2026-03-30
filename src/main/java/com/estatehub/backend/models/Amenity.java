@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "amenities")
 @Data
@@ -22,6 +24,9 @@ public class Amenity {
     @NotBlank(message = "Name is required")
     private String name;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private BigDecimal monthlyPrice = BigDecimal.ZERO;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "building_id", nullable = false)

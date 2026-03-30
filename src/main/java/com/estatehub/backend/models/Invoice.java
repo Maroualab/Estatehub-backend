@@ -36,10 +36,10 @@ public class Invoice {
     @Column(nullable = false)
     private InvoiceStatus status;
 
+    @Builder.Default
     @Column(nullable = false)
-    private int reminderLevel = 0; // 0=None, 1=Email Sent, 2=Warning Sent
+    private int reminderLevel = 0;
 
-    // --- RELATIONS ---
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "lease_id", nullable = false)

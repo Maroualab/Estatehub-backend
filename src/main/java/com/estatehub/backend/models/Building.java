@@ -37,6 +37,7 @@ public class Building {
     @JoinColumn(name = "landlord_id", nullable = false)
     private User landlord;
 
+    @Builder.Default
     @OneToMany(mappedBy = "building", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Unit> units = new ArrayList<>();
 
