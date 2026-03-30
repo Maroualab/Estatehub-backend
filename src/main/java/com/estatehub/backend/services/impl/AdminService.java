@@ -1,5 +1,6 @@
 package com.estatehub.backend.services.impl;
 
+import com.estatehub.backend.exceptions.BusinessValidationException;
 import com.estatehub.backend.exceptions.ResourceNotFoundException;
 import com.estatehub.backend.models.User;
 import com.estatehub.backend.models.enums.UserRole;
@@ -49,5 +50,31 @@ public class AdminService implements IAdminService {
         }
 
         userRepository.delete(landlord);
+    }
+
+    @Override
+    public User suspendUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User", id));
+
+        if (user.getRole() == UserRole.ADMIN) {
+            throw new BusinessValidationException("Impossible de suspendre un administrateur.");
+        }
+
+        user.setActive(false);
+        return userRepository.save(user);
+    }
+
+    @Override
+    public User unsuspendUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User", id));
+
+        if (user.getRole() == UserRole.ADMIN) {
+            throw new BusinessValidationException("Impossible de modifier le statut d'un administrateur.");
+        }
+
+        user.setActive(true);
+        return userRepository.save(user);
     }
 }

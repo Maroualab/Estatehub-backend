@@ -9,4 +9,6 @@ public interface IAdminService {
     List<User> getPendingLandlords();
     User approveLandlord(Long id);
     void rejectLandlord(Long id);
+    User suspendUser(Long id);
+    User unsuspendUser(Long id);
 }

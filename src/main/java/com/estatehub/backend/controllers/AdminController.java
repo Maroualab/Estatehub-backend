@@ -37,4 +37,14 @@ public class AdminController {
         adminService.rejectLandlord(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/users/{id}/suspend")
+    public ResponseEntity<User> suspendUser(@PathVariable Long id) {
+        return ResponseEntity.ok(adminService.suspendUser(id));
+    }
+
+    @PatchMapping("/users/{id}/unsuspend")
+    public ResponseEntity<User> unsuspendUser(@PathVariable Long id) {
+        return ResponseEntity.ok(adminService.unsuspendUser(id));
+    }
 }
