@@ -26,7 +26,10 @@ public class LeaseDTO {
 
     private Long tenantId;
     private String tenantEmail;
+    private String tenantFirstName;
+    private String tenantLastName;
 
     private Long unitId;
     private String unitDoorNumber;
+    private String buildingName;
 }

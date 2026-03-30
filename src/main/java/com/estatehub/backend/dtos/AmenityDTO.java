@@ -1,7 +1,5 @@
 package com.estatehub.backend.dtos;
 
-import com.estatehub.backend.models.enums.UnitStatus;
-import com.estatehub.backend.models.enums.UnitType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,12 +11,9 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UnitDTO {
+public class AmenityDTO {
     private Long id;
-    private String doorNumber;
-    private Integer floor;
-    private UnitType unitType;
-    private BigDecimal rentPrice;
+    private String name;
+    private BigDecimal monthlyPrice;
     private Long buildingId;
-    private UnitStatus status;
 }

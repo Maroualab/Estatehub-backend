@@ -21,5 +21,14 @@ public class InvoiceDTO {
     private InvoiceStatus status;
     private int reminderLevel;
 
+    // --- Relations ---
     private Long leaseId;
+
+    // Champs de confort pour l'affichage (dérivés du bail / locataire / unité)
+    private String     tenantEmail;
+    private String     tenantFullName;
+    private String     unitDoorNumber;
+    private String     buildingName;
+    private BigDecimal leaseBaseRentAmount;
+    private BigDecimal leaseUtilityAmount;
 }
